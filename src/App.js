@@ -77,7 +77,7 @@ function App() {
         const adjustedHeight = patuti.ducking ? patuti.height / 2 : patuti.height;
         const adjustedY = patuti.ducking ? patuti.y + patuti.height / 2 : patuti.y;
         ctx.drawImage(img, patuti.x, adjustedY, patuti.width, adjustedHeight);
-        patuti.frameIndex += 0.2;
+        patuti.frameIndex += 0.5;
       };
 
       const updatePatuti = () => {
@@ -111,7 +111,10 @@ function App() {
         if (patuti.x + patuti.width > platform.x + platform.width)
           patuti.x = platform.x + platform.width - patuti.width;
 
-        if (patuti.y > platform.y + 10) triggerGameOver();
+        if (patuti.y > platform.y + 10 && !gameOver) {
+          patuti.life = 0;
+          triggerGameOver();
+        }
 
         if (patuti.y >= platform.y - patuti.height + 5) {
           patuti.y = platform.y - patuti.height + 5;
@@ -138,7 +141,14 @@ function App() {
             b.y < collisionTop + collisionHeight &&
             b.y + b.height > collisionTop
           ) {
-            patuti.life -= 10;
+            if (!gameOver && patuti.life > 0) {
+  patuti.life -= 10;
+  if (patuti.life <= 0) {
+    patuti.life = 0;
+    triggerGameOver();
+    return;
+  }
+}
             bullets.current.splice(i, 1);
           }
         });
@@ -163,6 +173,7 @@ function App() {
       };
 
       const triggerGameOver = () => {
+        if (gameOver) return;
         setGameOver(true);
         ctx.fillStyle = "rgba(228, 86, 86, 0.7)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -179,11 +190,13 @@ function App() {
 
       const spawnBullet = () => {
         if (gameOver) return;
+
         const type = Math.random() < 0.5 ? "horizontal" : "vertical";
+
         if (type === "horizontal") {
           bullets.current.push({
             x: canvas.width,
-            y: patuti.y + patuti.height / 4 + Math.random() * 10,
+            y: patuti.y + patuti.height / 3 + (Math.random() * 20 - 10),
             width: 30,
             height: 30,
             speedX: 4,
@@ -203,8 +216,16 @@ function App() {
         }
       };
 
+      setInterval(spawnBullet, 1000);
+
       const gameLoop = () => {
-        if (gameOver || patuti.life <= 0) return triggerGameOver();
+        if (gameOver) return;
+
+        if (patuti.life <= 0) {
+          triggerGameOver();
+          return;
+        }
+
         ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
         drawArea();
         updatePatuti();
@@ -214,7 +235,6 @@ function App() {
         requestAnimationFrame(gameLoop);
       };
 
-      setInterval(spawnBullet, 1000);
       gameLoop();
     });
 
